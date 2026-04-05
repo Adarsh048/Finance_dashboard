@@ -4,8 +4,9 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import {
-  Search, Download, Moon, Sun, X, Pencil, ShieldCheck, 
-  PieChart as PieChartIcon, List, BarChart2, FileText, Filter, Loader2, ChevronDown, Check
+  Search, Download, Moon, Sun, X, Pencil, ShieldCheck, Menu,
+  PieChart as PieChartIcon, List, BarChart2, FileText, Filter, Loader2, ChevronDown, Check,
+  Link as LinkIcon, RefreshCcw, CheckCircle2, Plug, Activity, Cpu, Network, Key
 } from 'lucide-react';
 
 // ==========================================
@@ -20,6 +21,18 @@ const formatCurrency = (amount) => {
   } catch (e) {
     return `₹${amount}`;
   }
+};
+
+const formatCompactNumber = (number) => {
+  if (number === 0) return '₹0';
+  const isNegative = number < 0;
+  const absNum = Math.abs(number);
+  let formatted;
+  if (absNum >= 10000000) formatted = `₹${(absNum / 10000000).toFixed(1)}Cr`;
+  else if (absNum >= 100000) formatted = `₹${(absNum / 100000).toFixed(1)}L`;
+  else if (absNum >= 1000) formatted = `₹${(absNum / 1000).toFixed(0)}k`;
+  else formatted = `₹${absNum}`;
+  return isNegative ? `-${formatted}` : formatted;
 };
 
 const formatDate = (dateString, format = 'medium') => {
@@ -70,22 +83,61 @@ const generateMockData = () => {
   const data = [];
   const today = new Date();
   
+  // 1. Inject Fixed Monthly Income & Expenses for the last 3 months
+  for (let i = 0; i < 3; i++) {
+    // Salary
+    data.push({
+      id: `tx_SALARY${i}`,
+      date: new Date(today.getFullYear(), today.getMonth() - i, 1).toISOString().split('T')[0],
+      merchant: 'Tech Corp India (Salary)',
+      category: 'Income',
+      amount: 145000,
+      type: 'income',
+      status: 'cleared',
+      note: 'Monthly Salary Credited'
+    });
+    // Mutual Fund SIP
+    data.push({
+      id: `tx_SIP${i}`,
+      date: new Date(today.getFullYear(), today.getMonth() - i, 5).toISOString().split('T')[0],
+      merchant: 'Zerodha Coin (Mutual Funds)',
+      category: 'Investments',
+      amount: 25000,
+      type: 'expense',
+      status: 'cleared',
+      note: 'Monthly SIP Auto-deduct'
+    });
+    // Rent / EMI
+    data.push({
+      id: `tx_RENT${i}`,
+      date: new Date(today.getFullYear(), today.getMonth() - i, 3).toISOString().split('T')[0],
+      merchant: 'HDFC Home Loan / Landlord',
+      category: 'Housing',
+      amount: 35000,
+      type: 'expense',
+      status: 'cleared',
+      note: 'Housing'
+    });
+  }
+
+  // 2. Variable Lifestyle Expenses
   const templates = [
-    { cat: 'Income', type: 'income', merchant: 'Zerodha Broking (Dividends)', min: 1500000, max: 4500000 },
-    { cat: 'Income', type: 'income', merchant: 'Prestige Estates Rental', min: 800000, max: 800000 },
-    { cat: 'Income', type: 'income', merchant: 'Blackstone Capital Gains', min: 12000000, max: 35000000 },
-    { cat: 'Lifestyle', type: 'expense', merchant: 'DLF Golf & Country Club', min: 1200000, max: 1500000 },
-    { cat: 'Lifestyle', type: 'expense', merchant: 'Rolex Boutique Mumbai', min: 1200000, max: 3500000 },
-    { cat: 'Travel', type: 'expense', merchant: 'Emirates First Class', min: 600000, max: 1500000 },
-    { cat: 'Travel', type: 'expense', merchant: 'The Ritz-Carlton Maldives', min: 1200000, max: 2800000 },
-    { cat: 'Advisory', type: 'expense', merchant: 'Julius Baer Wealth Mgt', min: 500000, max: 1200000 },
-    { cat: 'Advisory', type: 'expense', merchant: 'KPMG Tax Advisory', min: 400000, max: 800000 },
-    { cat: 'Real Estate', type: 'expense', merchant: 'Lodha Luxury Maintenance', min: 200000, max: 350000 },
-    { cat: 'Investments', type: 'expense', merchant: 'Sotheby\'s Fine Art', min: 4500000, max: 12500000 },
-    { cat: 'Investments', type: 'expense', merchant: 'AIF Capital Call', min: 7500000, max: 25000000 },
+    { cat: 'Groceries', type: 'expense', merchant: 'Swiggy Instamart', min: 300, max: 1200 },
+    { cat: 'Groceries', type: 'expense', merchant: 'D-Mart Ready', min: 2500, max: 4500 },
+    { cat: 'Food & Dining', type: 'expense', merchant: 'Zomato', min: 350, max: 800 },
+    { cat: 'Food & Dining', type: 'expense', merchant: 'Rameshwaram Cafe', min: 150, max: 400 },
+    { cat: 'Food & Dining', type: 'expense', merchant: 'Social (Dining)', min: 1800, max: 3500 },
+    { cat: 'Transport', type: 'expense', merchant: 'Uber India', min: 150, max: 450 },
+    { cat: 'Transport', type: 'expense', merchant: 'Indian Oil (Fuel)', min: 2000, max: 2500 },
+    { cat: 'Shopping', type: 'expense', merchant: 'Amazon India', min: 499, max: 3000 },
+    { cat: 'Shopping', type: 'expense', merchant: 'Myntra', min: 1200, max: 2500 },
+    { cat: 'Housing', type: 'expense', merchant: 'Tata Power / BESCOM', min: 1200, max: 2200 },
+    { cat: 'Housing', type: 'expense', merchant: 'Airtel Broadband', min: 1180, max: 1180 },
+    { cat: 'Health', type: 'expense', merchant: 'Apollo Pharmacy', min: 250, max: 800 },
   ];
 
-  for (let i = 0; i < 75; i++) {
+  // Distribute ~90 variable transactions over the last 90 days
+  for (let i = 0; i < 90; i++) {
     const t = templates[Math.floor(Math.random() * templates.length)];
     const date = new Date(today);
     date.setDate(date.getDate() - Math.floor(Math.random() * 90));
@@ -97,8 +149,7 @@ const generateMockData = () => {
       category: t.cat,
       amount: Math.floor(Math.random() * (t.max - t.min + 1)) + t.min,
       type: t.type,
-      status: Math.random() > 0.95 ? 'pending' : 'cleared',
-      note: Math.random() > 0.8 ? 'Pending advisory review' : undefined
+      status: Math.random() > 0.9 ? 'pending' : 'cleared'
     });
   }
   return data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -113,12 +164,13 @@ const safeStorageSet = (key, value) => {
 };
 
 const loadTransactions = () => {
-  const stored = safeStorageGet('fin_transactions_hni_v1');
+  // Changed storage key to force generating the new profile data
+  const stored = safeStorageGet('fin_transactions_salaried_v1');
   if (stored) {
     try { return JSON.parse(stored); } catch { /* Corrupt data */ }
   }
   const mock = generateMockData();
-  safeStorageSet('fin_transactions_hni_v1', JSON.stringify(mock));
+  safeStorageSet('fin_transactions_salaried_v1', JSON.stringify(mock));
   return mock;
 };
 
@@ -147,12 +199,12 @@ const appReducer = (state, action) => {
     case 'NAVIGATE': return { ...state, activePage: action.payload };
     case 'UPDATE_TXN': {
       const updated = state.transactions.map(t => t.id === action.payload.id ? action.payload : t);
-      safeStorageSet('fin_transactions_hni_v1', JSON.stringify(updated));
+      safeStorageSet('fin_transactions_salaried_v1', JSON.stringify(updated));
       return { ...state, transactions: updated, selectedTxn: null };
     }
     case 'DELETE_TXN': {
       const filtered = state.transactions.filter(t => t.id !== action.payload);
-      safeStorageSet('fin_transactions_hni_v1', JSON.stringify(filtered));
+      safeStorageSet('fin_transactions_salaried_v1', JSON.stringify(filtered));
       return { ...state, transactions: filtered, selectedTxn: null };
     }
     default: return state;
@@ -216,7 +268,7 @@ const RoleSwitchOverlay = () => {
   const { state } = useAppStore();
   if (!state.switchingToRole) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-sm animate-in fade-in duration-200 px-4 text-center">
       <div className="flex flex-col items-center">
          <Loader2 className="w-6 h-6 animate-spin text-zinc-900 dark:text-zinc-100 mb-4" />
          <h2 className="text-[14px] font-medium text-zinc-900 dark:text-zinc-100 tracking-tight">
@@ -246,11 +298,13 @@ const CommandPalette = () => {
     { id: 'nav-dash', label: 'Go to Overview', icon: PieChartIcon, run: () => { dispatch({ type: 'NAVIGATE', payload: 'dashboard' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
     { id: 'nav-txn', label: 'Go to Ledger', icon: List, run: () => { dispatch({ type: 'NAVIGATE', payload: 'transactions' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
     { id: 'nav-ana', label: 'Go to Intelligence', icon: BarChart2, run: () => { dispatch({ type: 'NAVIGATE', payload: 'analytics' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
+    { id: 'nav-rep', label: 'Go to Statements', icon: FileText, run: () => { dispatch({ type: 'NAVIGATE', payload: 'reports' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
+    { id: 'nav-int', label: 'Go to Integrations', icon: Plug, run: () => { dispatch({ type: 'NAVIGATE', payload: 'integrations' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
     { id: 'theme', label: 'Toggle Theme', icon: state.darkMode ? Sun : Moon, run: () => { dispatch({ type: 'TOGGLE_DARK' }); dispatch({ type: 'TOGGLE_CMD', payload: false }); } },
   ].filter(a => a.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] bg-zinc-900/10 dark:bg-[#0A0A0A]/80 backdrop-blur-[2px]" onClick={() => dispatch({ type: 'TOGGLE_CMD', payload: false })}>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] sm:pt-[15vh] bg-zinc-900/10 dark:bg-[#0A0A0A]/80 backdrop-blur-[2px] px-4" onClick={() => dispatch({ type: 'TOGGLE_CMD', payload: false })}>
       <div className="w-full max-w-[420px] bg-white dark:bg-[#111] shadow-2xl border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center px-3 py-3 border-b border-zinc-100 dark:border-zinc-800">
           <Search className="w-3.5 h-3.5 text-zinc-400 mr-2" />
@@ -284,8 +338,8 @@ const TransactionDrawer = () => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-zinc-900/10 dark:bg-[#0A0A0A]/60 z-40 transition-opacity" onClick={() => dispatch({ type: 'SELECT_TXN', payload: null })} />
-      <div className="fixed inset-y-0 right-0 w-full max-w-[360px] bg-white dark:bg-[#111] border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 flex flex-col">
+      <div className="fixed inset-0 bg-zinc-900/20 dark:bg-[#0A0A0A]/60 z-40 transition-opacity backdrop-blur-[2px]" onClick={() => dispatch({ type: 'SELECT_TXN', payload: null })} />
+      <div className="fixed inset-y-0 right-0 w-full sm:max-w-[360px] bg-white dark:bg-[#111] border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 flex flex-col">
         <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800/50">
           <h2 className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">{isEditing ? 'Edit Ledger Entry' : 'Ledger Entry'}</h2>
           <button onClick={() => dispatch({ type: 'SELECT_TXN', payload: null })} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><X className="w-4 h-4" /></button>
@@ -313,12 +367,14 @@ const TransactionDrawer = () => {
             <div>
               <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Category</label>
               <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-transparent border-b border-zinc-200 dark:border-zinc-700 text-[13px] text-zinc-900 dark:text-zinc-100 pb-1.5 outline-none focus:border-zinc-500">
-                <option value="Investments" className="dark:bg-[#111]">Investments</option>
-                <option value="Real Estate" className="dark:bg-[#111]">Real Estate</option>
-                <option value="Travel" className="dark:bg-[#111]">Travel</option>
-                <option value="Lifestyle" className="dark:bg-[#111]">Lifestyle</option>
-                <option value="Advisory" className="dark:bg-[#111]">Advisory</option>
                 <option value="Income" className="dark:bg-[#111]">Income</option>
+                <option value="Housing" className="dark:bg-[#111]">Housing</option>
+                <option value="Investments" className="dark:bg-[#111]">Investments</option>
+                <option value="Groceries" className="dark:bg-[#111]">Groceries</option>
+                <option value="Food & Dining" className="dark:bg-[#111]">Food & Dining</option>
+                <option value="Transport" className="dark:bg-[#111]">Transport</option>
+                <option value="Shopping" className="dark:bg-[#111]">Shopping</option>
+                <option value="Health" className="dark:bg-[#111]">Health</option>
               </select>
             </div>
           </div>
@@ -339,7 +395,7 @@ const TransactionDrawer = () => {
         )}
         
         {state.role === 'admin' ? (
-          <div className="p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#111] flex space-x-3">
+          <div className="p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#111] flex space-x-3 pb-safe">
             {isEditing ? (
               <>
                 <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
@@ -355,7 +411,7 @@ const TransactionDrawer = () => {
             )}
           </div>
         ) : (
-          <div className="p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#111] flex items-center justify-center">
+          <div className="p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#111] flex items-center justify-center pb-safe">
              <span className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center font-medium"><ShieldCheck className="w-3 h-3 mr-1.5 opacity-70" /> Viewer Access (Read-Only)</span>
           </div>
         )}
@@ -404,35 +460,35 @@ const DashboardPage = () => {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <section className="flex flex-col lg:flex-row justify-between items-start pb-10 border-b border-zinc-200/60 dark:border-zinc-800/60">
+      <section className="flex flex-col lg:flex-row justify-between items-start pb-8 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div className="mb-8 lg:mb-0 max-w-sm w-full">
           <h2 className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2 font-semibold tracking-widest uppercase">Net Position</h2>
-          <h1 className="text-5xl font-medium tracking-tight text-zinc-900 dark:text-white tabular-nums mb-3 leading-none">{formatCurrency(totalBalance)}</h1>
+          <h1 className="text-4xl sm:text-5xl font-medium tracking-tight text-zinc-900 dark:text-white tabular-nums mb-3 leading-none">{formatCurrency(totalBalance)}</h1>
           <p className="text-[12px] text-zinc-500">Current operating capital. Liquid reserves stable.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto mt-4 lg:mt-0">
+        <div className="flex flex-row w-full lg:w-auto gap-4">
           <div className="flex-1 sm:w-36 p-4 rounded-[6px] border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-[#111]">
-            <span className="block text-[11px] text-zinc-500 mb-1.5 font-medium uppercase tracking-wider">MTD Inflows</span>
-            <span className="block text-[16px] font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">{formatCurrency(currentStats.in)}</span>
+            <span className="block text-[10px] sm:text-[11px] text-zinc-500 mb-1.5 font-medium uppercase tracking-wider">MTD Inflows</span>
+            <span className="block text-[14px] sm:text-[16px] font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">{formatCurrency(currentStats.in)}</span>
           </div>
           <div className="flex-1 sm:w-36 p-4 rounded-[6px] border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-[#111]">
-            <span className="block text-[11px] text-zinc-500 mb-1.5 font-medium uppercase tracking-wider">MTD Outflows</span>
-            <span className="block text-[16px] font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">{formatCurrency(currentStats.out)}</span>
+            <span className="block text-[10px] sm:text-[11px] text-zinc-500 mb-1.5 font-medium uppercase tracking-wider">MTD Outflows</span>
+            <span className="block text-[14px] sm:text-[16px] font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">{formatCurrency(currentStats.out)}</span>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 py-12">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-12 py-10">
         <div className="col-span-1 lg:col-span-8 flex flex-col">
           <div className="flex items-center justify-between mb-8"><h3 className="text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-semibold">Net Flow Trend (14D)</h3></div>
-          <div className="h-[240px] w-full mt-auto">
+          <div className="h-[220px] sm:h-[240px] w-full mt-auto">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke={state.darkMode ? '#27272a' : '#f4f4f5'} strokeDasharray="3 3" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={(val) => formatDate(val, 'short')} dy={12} minTickGap={30} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={(v) => `₹${v/1000}k`} dx={-10} width={40} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={formatCompactNumber} dx={-10} width={60} />
                   <RechartsTooltip cursor={{ stroke: '#a1a1aa', strokeWidth: 1, strokeDasharray: '4 4' }} contentStyle={{ backgroundColor: state.darkMode ? '#111' : '#fff', border: `1px solid ${state.darkMode ? '#27272a' : '#e4e4e7'}`, borderRadius: '6px', padding: '8px 12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }} itemStyle={{ color: state.darkMode ? '#fff' : '#000', fontSize: '12px', fontWeight: 500 }} labelStyle={{ color: '#a1a1aa', fontSize: '11px', marginBottom: '4px' }} formatter={(val) => [formatCurrency(val), 'Net']} labelFormatter={(label) => formatDate(label)} />
                   <Line type="monotone" dataKey="balance" stroke={state.darkMode ? '#a1a1aa' : '#52525b'} strokeWidth={1.5} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: state.darkMode ? '#fff' : '#000' }} />
                 </LineChart>
@@ -471,8 +527,8 @@ const DashboardPage = () => {
             {catData.slice(0, 3).map((cat, i) => (
               <div key={cat.name} className="flex justify-between items-center text-[12px]">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                  <span className="text-zinc-600 dark:text-zinc-400">{cat.name}</span>
+                  <div className="w-2 h-2 rounded-full mr-3 shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-zinc-600 dark:text-zinc-400 truncate pr-4">{cat.name}</span>
                 </div>
                 <span className="font-medium text-zinc-900 dark:text-zinc-100 tabular-nums">{formatCurrency(cat.value)}</span>
               </div>
@@ -498,7 +554,18 @@ const TransactionsPage = () => {
   const [sortBy, setSortBy] = useState('date-desc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   
-  const categories = ['All', ...Array.from(new Set(txns.map(t => t.category)))].sort();
+  // SMART FILTERS: Only show categories relevant to the selected Type (Income/Expense)
+  const categories = useMemo(() => {
+    const relevantTxns = typeFilter === 'all' ? txns : txns.filter(t => t.type === typeFilter);
+    return ['All', ...Array.from(new Set(relevantTxns.map(t => t.category)))].sort();
+  }, [txns, typeFilter]);
+
+  // AUTO-RESET: If the selected category doesn't exist in the newly selected type, reset it to 'All'
+  useEffect(() => {
+    if (catFilter !== 'All' && !categories.includes(catFilter)) {
+      setCatFilter('All');
+    }
+  }, [categories, catFilter]);
 
   const sortOptions = [
     { value: 'date-desc', label: 'Newest First' },
@@ -526,52 +593,54 @@ const TransactionsPage = () => {
 
   return (
     <div className="animate-in fade-in duration-500 flex flex-col h-full">
-      <div className="pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60 sticky top-0 bg-white/95 dark:bg-[#0A0A0A]/95 z-10 pt-2">
-        <h1 className="text-xl font-medium tracking-tight text-zinc-900 dark:text-white mb-6">Ledger</h1>
+      <div className="pb-4 sm:pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60 sticky top-0 bg-white/95 dark:bg-[#0A0A0A]/95 z-10 pt-2">
+        <h1 className="text-xl font-medium tracking-tight text-zinc-900 dark:text-white mb-4 sm:mb-6">Ledger</h1>
         
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-5">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input type="text" placeholder="Search merchant..." value={query} onChange={e => setQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 text-[12px] bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 rounded-[4px] outline-none text-zinc-900 dark:text-zinc-100" />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center bg-zinc-50 dark:bg-zinc-800/40 p-0.5 rounded-[4px] border border-zinc-200 dark:border-zinc-800">
-              {['all', 'income', 'expense'].map(t => (
-                <button key={t} onClick={() => setTypeFilter(t)} className={cn("px-3 py-1.5 text-[11px] font-medium capitalize rounded-[3px] transition-colors", typeFilter === t ? "bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300")}>{t}</button>
-              ))}
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input type="text" placeholder="Search merchant..." value={query} onChange={e => setQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 text-[12px] bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 rounded-[4px] outline-none text-zinc-900 dark:text-zinc-100" />
             </div>
             
-            <div className="relative">
-              <button 
-                onClick={() => setIsSortOpen(!isSortOpen)}
-                className="flex items-center justify-between w-[120px] bg-zinc-50 dark:bg-zinc-800/40 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-[4px] px-2.5 py-1.5 outline-none hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
-              >
-                <span>{sortOptions.find(o => o.value === sortBy)?.label}</span>
-                <ChevronDown className="w-3 h-3 ml-2 opacity-70" />
-              </button>
+            <div className="flex items-center justify-between sm:justify-start space-x-2 w-full sm:w-auto">
+              <div className="flex items-center bg-zinc-50 dark:bg-zinc-800/40 p-0.5 rounded-[4px] border border-zinc-200 dark:border-zinc-800 shrink-0 overflow-x-auto no-scrollbar">
+                {['all', 'income', 'expense'].map(t => (
+                  <button key={t} onClick={() => setTypeFilter(t)} className={cn("px-3 py-1.5 text-[11px] font-medium capitalize rounded-[3px] transition-colors", typeFilter === t ? "bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300")}>{t}</button>
+                ))}
+              </div>
+              
+              <div className="relative shrink-0 z-30">
+                <button 
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  className="flex items-center justify-between w-[110px] sm:w-[120px] bg-zinc-50 dark:bg-zinc-800/40 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-[4px] px-2.5 py-1.5 outline-none hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                >
+                  <span className="truncate">{sortOptions.find(o => o.value === sortBy)?.label}</span>
+                  <ChevronDown className="w-3 h-3 ml-2 opacity-70 shrink-0" />
+                </button>
 
-              {isSortOpen && (
-                <>
-                  <div className="fixed inset-0 z-20" onClick={() => setIsSortOpen(false)} />
-                  <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-[4px] shadow-xl z-30 overflow-hidden py-1">
-                    {sortOptions.map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => { setSortBy(option.value); setIsSortOpen(false); }}
-                        className="w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                {isSortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setIsSortOpen(false)} />
+                    <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-[4px] shadow-xl z-30 overflow-hidden py-1">
+                      {sortOptions.map(option => (
+                        <button
+                          key={option.value}
+                          onClick={() => { setSortBy(option.value); setIsSortOpen(false); }}
+                          className="w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           
-          <div className="flex-1 overflow-x-auto no-scrollbar flex items-center space-x-1.5 border-l border-zinc-200 dark:border-zinc-800 pl-5">
-            <Filter className="w-3.5 h-3.5 text-zinc-400 mr-2 shrink-0" />
+          <div className="w-full overflow-x-auto no-scrollbar flex items-center space-x-1.5 sm:border-l sm:border-zinc-200 sm:dark:border-zinc-800 sm:pl-5 pb-1">
+            <Filter className="w-3.5 h-3.5 text-zinc-400 mr-1 sm:mr-2 shrink-0 hidden sm:block" />
             {categories.map(cat => (
               <button key={cat} onClick={() => setCatFilter(cat)} className={cn("px-2.5 py-1.5 text-[11px] rounded-[4px] transition-colors whitespace-nowrap", catFilter === cat ? "bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900 font-medium" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50")}>{cat}</button>
             ))}
@@ -579,19 +648,19 @@ const TransactionsPage = () => {
         </div>
       </div>
 
-      <div className="flex-1 mt-4 w-full">
+      <div className="flex-1 mt-2 sm:mt-4 w-full">
         <div className="flex flex-col">
           {filteredTxns.length === 0 ? (
             <div className="py-16 text-center text-[12px] text-zinc-500">No records match the current filters.</div>
           ) : (
             filteredTxns.map((txn) => (
-              <div key={txn.id} onClick={() => dispatch({ type: 'SELECT_TXN', payload: txn })} className="flex justify-between items-center py-3.5 border-b border-zinc-100 dark:border-zinc-800/40 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 cursor-pointer transition-colors px-3 -mx-3 rounded-[4px]">
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 tracking-tight">{txn.merchant}</span>
-                  <span className="text-[11px] text-zinc-500 mt-1">{txn.category} • {formatDate(txn.date, 'short')}</span>
+              <div key={txn.id} onClick={() => dispatch({ type: 'SELECT_TXN', payload: txn })} className="flex justify-between items-center py-3.5 border-b border-zinc-100 dark:border-zinc-800/40 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 cursor-pointer transition-colors px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-[4px]">
+                <div className="flex flex-col overflow-hidden pr-3">
+                  <span className="text-[12px] sm:text-[13px] font-medium text-zinc-900 dark:text-zinc-100 tracking-tight truncate">{txn.merchant}</span>
+                  <span className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 sm:mt-1 truncate">{txn.category} • {formatDate(txn.date, 'short')}</span>
                 </div>
-                <div className="flex flex-col items-end text-right">
-                  <span className={cn("text-[13px] font-medium tabular-nums tracking-tight", txn.type === 'income' ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100')}>
+                <div className="flex flex-col items-end text-right shrink-0">
+                  <span className={cn("text-[12px] sm:text-[13px] font-medium tabular-nums tracking-tight", txn.type === 'income' ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100')}>
                     {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                   </span>
                 </div>
@@ -652,9 +721,9 @@ const AnalyticsPage = () => {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <div className="flex justify-between items-end pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <h1 className="text-xl font-medium tracking-tight text-zinc-900 dark:text-white">Intelligence</h1>
-        <div className="flex items-center space-x-1 bg-zinc-50 dark:bg-zinc-800/40 p-0.5 rounded-[4px]">
+        <div className="flex items-center space-x-1 bg-zinc-50 dark:bg-zinc-800/40 p-0.5 rounded-[4px] w-fit">
           {['7D', '1M', '3M'].map(r => (
             <button key={r} onClick={() => setTimeRange(r)} className={cn("px-3 py-1.5 text-[11px] font-medium rounded-[3px] transition-colors", timeRange === r ? "bg-white dark:bg-[#111] text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300")}>{r}</button>
           ))}
@@ -662,10 +731,10 @@ const AnalyticsPage = () => {
       </div>
 
       {/* Dynamic Insights Cards */}
-      <div className="py-8 grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
+      <div className="py-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div className="p-4 rounded-[6px] bg-zinc-50/50 dark:bg-[#111] border border-zinc-200/60 dark:border-zinc-800/60">
           <h4 className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2 font-medium">Period Trend</h4>
-          <p className="text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <p className="text-[12px] sm:text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
             {prevStats.out === 0 
               ? "Sufficient historical data is not yet available for comparison." 
               : <>Outflows are <strong className="font-medium text-zinc-900 dark:text-white">{expenseChange > 0 ? 'up' : 'down'} {Math.abs(expenseChange).toFixed(1)}%</strong> compared to the previous {rangeDays} days.</>}
@@ -673,7 +742,7 @@ const AnalyticsPage = () => {
         </div>
         <div className="p-4 rounded-[6px] bg-zinc-50/50 dark:bg-[#111] border border-zinc-200/60 dark:border-zinc-800/60">
           <h4 className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2 font-medium">Top Category</h4>
-          <p className="text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <p className="text-[12px] sm:text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
             {topCategory 
               ? <>Your highest spending category is <strong className="font-medium text-zinc-900 dark:text-white">{topCategory.name}</strong>, accounting for <strong className="font-medium tabular-nums text-zinc-900 dark:text-white">{formatCurrency(topCategory.value)}</strong>.</>
               : "No categorized expenses found for this period."}
@@ -681,7 +750,7 @@ const AnalyticsPage = () => {
         </div>
         <div className="p-4 rounded-[6px] bg-zinc-50/50 dark:bg-[#111] border border-zinc-200/60 dark:border-zinc-800/60">
           <h4 className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2 font-medium">Largest Transaction</h4>
-          <p className="text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <p className="text-[12px] sm:text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
             {largestTxn 
               ? <>The largest isolated expense this period was to <strong className="font-medium text-zinc-900 dark:text-white">{largestTxn.merchant}</strong> for <strong className="font-medium tabular-nums text-zinc-900 dark:text-white">{formatCurrency(largestTxn.amount)}</strong>.</>
               : "No expense transactions recorded this period."}
@@ -689,16 +758,16 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      <div className="py-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="py-10 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-12">
         <div className="col-span-1 lg:col-span-8">
-          <h3 className="text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-semibold mb-8">Spend Velocity</h3>
-          <div className="h-[260px] w-full">
+          <h3 className="text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-semibold mb-6 sm:mb-8">Spend Velocity</h3>
+          <div className="h-[220px] sm:h-[260px] w-full">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke={state.darkMode ? '#27272a' : '#f4f4f5'} strokeDasharray="3 3" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={(val) => formatDate(val, 'short')} dy={12} minTickGap={30} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={(v) => `₹${v/1000}k`} dx={-10} width={40} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={formatCompactNumber} dx={-10} width={60} />
                   <RechartsTooltip cursor={{ stroke: '#a1a1aa', strokeWidth: 1, strokeDasharray: '4 4' }} contentStyle={{ backgroundColor: state.darkMode ? '#111' : '#fff', border: `1px solid ${state.darkMode ? '#27272a' : '#e4e4e7'}`, borderRadius: '6px', padding: '8px 12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }} itemStyle={{ color: state.darkMode ? '#fff' : '#000', fontSize: '12px', fontWeight: 500 }} labelStyle={{ color: '#a1a1aa', fontSize: '11px', marginBottom: '4px' }} formatter={(val) => [formatCurrency(val), 'Spend']} labelFormatter={(label) => formatDate(label)} />
                   <Line type="monotone" dataKey="amount" stroke={state.darkMode ? '#a1a1aa' : '#52525b'} strokeWidth={1.5} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: state.darkMode ? '#fff' : '#000' }} />
                 </LineChart>
@@ -713,7 +782,7 @@ const AnalyticsPage = () => {
         </div>
 
         <div className="col-span-1 lg:col-span-4 flex flex-col">
-          <h3 className="text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-semibold mb-8">Allocation</h3>
+          <h3 className="text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-semibold mb-6 sm:mb-8">Allocation</h3>
           <div className="h-[160px] w-full mb-8">
             {catData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -766,18 +835,14 @@ const ReportsPage = () => {
   const cutoff = new Date(new Date().getTime() - rangeDays * 24 * 60 * 60 * 1000);
   const reportData = useMemo(() => state.transactions.filter(t => new Date(t.date) >= cutoff && (reportType === 'all' || t.type === reportType)), [state.transactions, cutoff, reportType]);
   
-  const stats = reportData.reduce((acc, t) => {
-    if (t.type === 'income') acc.in += t.amount; else acc.out += t.amount; return acc;
-  }, { in: 0, out: 0 });
-
   return (
     <div className="animate-in fade-in duration-500 h-full flex flex-col">
       <div className="pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <h1 className="text-xl font-medium tracking-tight text-zinc-900 dark:text-white">Statements</h1>
       </div>
 
-      <div className="flex flex-col lg:flex-row mt-8 flex-1 gap-12">
-        <div className="w-full lg:w-64 flex flex-col space-y-8 lg:border-r border-zinc-200/60 dark:border-zinc-800/60 pr-0 lg:pr-10">
+      <div className="flex flex-col lg:flex-row mt-6 sm:mt-8 flex-1 gap-8 sm:gap-12">
+        <div className="w-full lg:w-64 flex flex-col space-y-6 sm:space-y-8 lg:border-r border-zinc-200/60 dark:border-zinc-800/60 pr-0 lg:pr-10 shrink-0">
           <div>
             <label className="block text-[12px] font-medium text-zinc-700 dark:text-zinc-300 mb-3">Period</label>
             <div className="flex flex-col space-y-1.5">
@@ -794,7 +859,7 @@ const ReportsPage = () => {
               ))}
             </div>
           </div>
-          <div className="pt-6 border-t border-zinc-200/60 dark:border-zinc-800/60">
+          <div className="pt-4 sm:pt-6 border-t border-zinc-200/60 dark:border-zinc-800/60">
             <Button className="w-full py-2.5 flex justify-center text-[12px]" onClick={handleGenerate} disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}
               {loading ? 'Processing...' : 'Generate Statement'}
@@ -802,24 +867,23 @@ const ReportsPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 min-h-[400px]">
+        <div className="flex-1 min-h-[300px] sm:min-h-[400px]">
           {!loading && !generated && (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600">
-              <FileText className="w-10 h-10 mb-4 opacity-20" />
-              <p className="text-[13px]">Configure parameters to generate a statement.</p>
+            <div className="h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 py-10">
+              <FileText className="w-8 sm:w-10 h-8 sm:h-10 mb-4 opacity-20" />
+              <p className="text-[12px] sm:text-[13px]">Configure parameters to generate a statement.</p>
             </div>
           )}
 
           {loading && (
-            <div className="space-y-8 animate-pulse w-full max-w-4xl">
-              <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-12" />
-              <div className="grid grid-cols-3 gap-8">
+            <div className="space-y-8 animate-pulse w-full max-w-4xl py-4">
+              <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-10" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8">
                 <div className="h-12 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
                 <div className="h-12 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
                 <div className="h-12 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
               </div>
-              <div className="space-y-4 mt-12">
-                <div className="h-8 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
+              <div className="space-y-4 mt-10">
                 <div className="h-8 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
                 <div className="h-8 bg-zinc-100 dark:bg-zinc-800/50 rounded" />
               </div>
@@ -827,29 +891,31 @@ const ReportsPage = () => {
           )}
 
           {generated && !loading && (
-            <div className="w-full max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-[14px] font-medium text-zinc-900 dark:text-white">Statement of Activity</h2>
-                <div className="flex space-x-3">
-                  <Button variant="outline" onClick={() => handleExport('csv')} className="py-1.5 px-3 text-[11px]">CSV</Button>
-                  <Button variant="outline" onClick={() => handleExport('json')} className="py-1.5 px-3 text-[11px]">JSON</Button>
+            <div className="w-full max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-500 py-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+                <h2 className="text-[13px] sm:text-[14px] font-medium text-zinc-900 dark:text-white">Statement of Activity</h2>
+                <div className="flex space-x-3 w-full sm:w-auto">
+                  <Button variant="outline" onClick={() => handleExport('csv')} className="flex-1 sm:flex-none py-1.5 px-3 text-[11px]">CSV Download</Button>
+                  <Button variant="outline" onClick={() => handleExport('json')} className="flex-1 sm:flex-none py-1.5 px-3 text-[11px]">JSON</Button>
                 </div>
               </div>
               
-              <div className="border border-zinc-200 dark:border-zinc-800 rounded-[6px] overflow-hidden">
-                <div className="grid grid-cols-[1fr_auto] gap-4 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
-                  <div>Category</div>
-                  <div className="text-right">Volume</div>
+              <div className="border border-zinc-200 dark:border-zinc-800 rounded-[6px] overflow-x-auto">
+                <div className="min-w-[300px]">
+                  <div className="grid grid-cols-[1fr_auto] gap-4 px-4 sm:px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-[10px] sm:text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                    <div>Category</div>
+                    <div className="text-right">Volume</div>
+                  </div>
+                  {Array.from(new Set(reportData.map(t => t.category))).map((cat, i, arr) => {
+                    const vol = reportData.filter(t => t.category === cat).reduce((s, t) => s + t.amount, 0);
+                    return (
+                      <div key={cat} className={cn("grid grid-cols-[1fr_auto] gap-4 px-4 sm:px-5 py-3.5 text-[12px] sm:text-[13px]", i !== arr.length - 1 && "border-b border-zinc-100 dark:border-zinc-800/50")}>
+                        <span className="text-zinc-700 dark:text-zinc-300">{cat}</span>
+                        <span className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100 text-right">{formatCurrency(vol)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                {Array.from(new Set(reportData.map(t => t.category))).map((cat, i, arr) => {
-                  const vol = reportData.filter(t => t.category === cat).reduce((s, t) => s + t.amount, 0);
-                  return (
-                    <div key={cat} className={cn("grid grid-cols-[1fr_auto] gap-4 px-5 py-3.5 text-[13px]", i !== arr.length - 1 && "border-b border-zinc-100 dark:border-zinc-800/50")}>
-                      <span className="text-zinc-700 dark:text-zinc-300">{cat}</span>
-                      <span className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100 text-right">{formatCurrency(vol)}</span>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           )}
@@ -860,17 +926,184 @@ const ReportsPage = () => {
 };
 
 // ==========================================
-// 10. APPLICATION SHELL & ERROR BOUNDARY
+// 10. PAGE: INTEGRATIONS (API CONNECTIONS)
+// ==========================================
+
+const IntegrationsPage = () => {
+  const [connections, setConnections] = useState([
+    { id: 'zerodha', name: 'Zerodha Kite', type: 'Brokerage', protocol: 'FIX API v2.1', ping: '12ms', status: 'connected', lastSync: '10 mins ago', icon: '📈' },
+    { id: 'hdfc', name: 'HDFC NetBanking', type: 'Bank Account', protocol: 'OAuth 2.0', ping: '45ms', status: 'connected', lastSync: '1 hour ago', icon: '🏦' },
+    { id: 'sbi', name: 'SBI Corporate', type: 'Bank Account', protocol: 'OAuth 2.0', ping: '--', status: 'disconnected', icon: '🏛️' },
+    { id: 'cred', name: 'CRED Partner', type: 'Credit Cards', protocol: 'REST API', ping: '--', status: 'disconnected', icon: '💳' },
+    { id: 'epfo', name: 'EPFO India', type: 'Government', protocol: 'SOAP Webhook', ping: '--', status: 'disconnected', icon: '🛡️' },
+    { id: 'binance', name: 'Binance Global', type: 'Crypto Wallet', protocol: 'WSS Stream', ping: '--', status: 'disconnected', icon: '🪙' },
+  ]);
+
+  const [connectingId, setConnectingId] = useState(null);
+
+  const handleConnect = (id) => {
+    setConnectingId(id);
+    setTimeout(() => {
+      setConnections(prev => prev.map(c => 
+        c.id === id ? { ...c, status: 'connected', lastSync: 'Live', ping: `${Math.floor(Math.random() * 30 + 10)}ms` } : c
+      ));
+      setConnectingId(null);
+    }, 2000);
+  };
+
+  const handleDisconnect = (id) => {
+    setConnections(prev => prev.map(c => 
+      c.id === id ? { ...c, status: 'disconnected', lastSync: null, ping: '--' } : c
+    ));
+  };
+
+  const activeCount = connections.filter(c => c.status === 'connected').length;
+
+  return (
+    <div className="animate-in fade-in duration-500 h-full flex flex-col relative">
+      {/* Background Tech Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none -z-10 [mask-image:linear-gradient(to_bottom,white_0%,transparent_80%)]" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-zinc-200/60 dark:border-zinc-800/60 mb-8">
+        <div>
+          <div className="flex items-center space-x-2 mb-3">
+            <Cpu className="w-4 h-4 text-zinc-400" />
+            <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-zinc-500 dark:text-zinc-400">System Architecture</span>
+          </div>
+          <h1 className="text-2xl font-medium tracking-tight text-zinc-900 dark:text-white mb-2">Connected Nodes</h1>
+          <p className="text-[13px] text-zinc-500 max-w-xl leading-relaxed">
+            Manage encrypted data pipelines and secure OAuth tunnels to external financial institutions. Data streams are end-to-end encrypted.
+          </p>
+        </div>
+
+        {/* Global Network Status */}
+        <div className="flex items-center space-x-6 bg-zinc-50/80 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-[6px] px-5 py-3 shadow-sm">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Network Status</p>
+            <div className="flex items-center space-x-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100">Optimal</span>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Active Tunnels</p>
+            <p className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 tabular-nums font-mono">{activeCount} / {connections.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of Nodes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {connections.map((provider) => (
+          <div 
+            key={provider.id} 
+            className={cn(
+              "relative overflow-hidden rounded-[8px] p-5 flex flex-col transition-all duration-500 group",
+              provider.status === 'connected' 
+                ? "bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl border border-zinc-200 dark:border-zinc-700/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]" 
+                : "bg-zinc-50/50 dark:bg-[#111] border border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
+            )}
+          >
+            {/* Top glowing ambient light for connected state */}
+            {provider.status === 'connected' && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-emerald-500/20 blur-md pointer-events-none" />
+            )}
+            
+            <div className="flex justify-between items-start mb-6">
+              <div className={cn(
+                "w-12 h-12 rounded-[8px] flex items-center justify-center text-[20px] transition-colors",
+                provider.status === 'connected' ? "bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 shadow-sm" : "bg-zinc-100 dark:bg-zinc-800/50 border border-transparent"
+              )}>
+                {provider.icon}
+              </div>
+              
+              <div className="flex flex-col items-end">
+                {provider.status === 'connected' ? (
+                  <span className="inline-flex items-center text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 px-2 py-1 rounded-[4px]">
+                    <Activity className="w-3 h-3 mr-1 animate-pulse" /> Streaming
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-[10px] font-medium text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/50 px-2 py-1 rounded-[4px]">
+                    Offline
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center">
+                {provider.name}
+              </h3>
+              <p className="text-[12px] text-zinc-500 mt-0.5">{provider.type}</p>
+            </div>
+
+            {/* Tech Specs Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-6 p-3 rounded-[6px] bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800/50">
+              <div>
+                <p className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1 flex items-center"><Key className="w-3 h-3 mr-1" /> Protocol</p>
+                <p className="text-[11px] font-mono text-zinc-700 dark:text-zinc-300 truncate">{provider.protocol}</p>
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1 flex items-center"><Network className="w-3 h-3 mr-1" /> Latency</p>
+                <p className="text-[11px] font-mono text-zinc-700 dark:text-zinc-300">{provider.ping}</p>
+              </div>
+            </div>
+            
+            <div className="mt-auto flex items-center justify-between pt-2">
+              {provider.status === 'connected' ? (
+                <>
+                  <div className="flex items-center text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+                    <RefreshCcw className="w-3 h-3 mr-1.5 opacity-70" /> Sync: {provider.lastSync}
+                  </div>
+                  <button 
+                    onClick={() => handleDisconnect(provider.id)} 
+                    className="text-[11px] font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-[4px]"
+                  >
+                    Terminate
+                  </button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline"
+                  className="w-full py-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-solid hover:border-zinc-400 dark:hover:border-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all group/btn" 
+                  onClick={() => handleConnect(provider.id)}
+                  disabled={connectingId === provider.id}
+                >
+                  {connectingId === provider.id ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-zinc-900 dark:text-white" /> <span className="text-zinc-900 dark:text-white">Handshaking...</span></>
+                  ) : (
+                    <><LinkIcon className="w-3.5 h-3.5 mr-2 text-zinc-400 group-hover/btn:text-zinc-900 dark:group-hover/btn:text-white transition-colors" /> <span className="text-zinc-600 group-hover/btn:text-zinc-900 dark:text-zinc-400 dark:group-hover/btn:text-white transition-colors">Initialize Connection</span></>
+                  )}
+                </Button>
+              )}
+            </div>
+
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+// ==========================================
+// 11. APPLICATION SHELL & ERROR BOUNDARY
 // ==========================================
 
 const AppShell = () => {
   const { state, dispatch } = useAppStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const pages = {
     dashboard: <DashboardPage />,
     transactions: <TransactionsPage />,
     analytics: <AnalyticsPage />,
-    reports: <ReportsPage />
+    reports: <ReportsPage />,
+    integrations: <IntegrationsPage />
   };
 
   if (state.isFetching) {
@@ -883,23 +1116,40 @@ const AppShell = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0A0A0A] text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800/50 flex">
+    <div className="min-h-screen bg-white dark:bg-[#0A0A0A] text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800/50 flex overflow-hidden">
       
+      {/* Mobile Sidebar Overlay Background */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 dark:bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity" 
+          onClick={() => setMobileMenuOpen(false)} 
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="relative shrink-0 h-screen w-16 hover:w-[240px] transition-[width] duration-300 ease-in-out z-40 bg-zinc-50/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-r border-zinc-200/50 dark:border-zinc-800/50 flex flex-col group overflow-hidden">
+      <aside className={cn(
+        "fixed md:static inset-y-0 left-0 z-50 h-screen bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-r border-zinc-200/50 dark:border-zinc-800/50 flex flex-col group overflow-hidden transition-all duration-300 ease-in-out shrink-0",
+        mobileMenuOpen ? "w-[240px] translate-x-0 shadow-2xl md:shadow-none" : "w-[240px] -translate-x-full md:w-16 md:translate-x-0 md:hover:w-[240px]"
+      )}>
          
-         <div className="h-6 shrink-0" />
+         <div className="h-14 md:h-6 shrink-0 flex items-center px-4 md:hidden border-b border-zinc-100 dark:border-zinc-800/50">
+           <span className="text-[12px] font-semibold tracking-widest uppercase text-zinc-400">Menu</span>
+         </div>
          
-         <nav className="flex flex-col space-y-1.5 mt-2 px-2 flex-1">
+         <nav className="flex flex-col space-y-1.5 mt-4 md:mt-2 px-2 flex-1">
             {[
               { id: 'dashboard', icon: PieChartIcon, label: 'Overview' },
               { id: 'transactions', icon: List, label: 'Ledger' },
               { id: 'analytics', icon: BarChart2, label: 'Intelligence' },
-              { id: 'reports', icon: FileText, label: 'Statements' }
+              { id: 'reports', icon: FileText, label: 'Statements' },
+              { id: 'integrations', icon: Plug, label: 'Integrations' }
             ].map(item => (
               <button 
                 key={item.id} 
-                onClick={() => dispatch({ type: 'NAVIGATE', payload: item.id })}
+                onClick={() => {
+                  dispatch({ type: 'NAVIGATE', payload: item.id });
+                  setMobileMenuOpen(false); // Auto-close on mobile when selecting
+                }}
                 className={cn(
                   "flex items-center h-10 rounded-[6px] transition-colors whitespace-nowrap overflow-hidden",
                   state.activePage === item.id 
@@ -910,7 +1160,7 @@ const AppShell = () => {
                 <div className="w-12 flex items-center justify-center shrink-0">
                    <item.icon className="w-4 h-4" />
                 </div>
-                <span className="text-[13px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium pl-0.5">{item.label}</span>
+                <span className="text-[13px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 font-medium pl-0.5">{item.label}</span>
               </button>
             ))}
          </nav>
@@ -922,7 +1172,7 @@ const AppShell = () => {
                TU
              </div>
            </div>
-           <div className="flex-1 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden pr-3 pl-1 space-y-1.5">
+           <div className="flex-1 flex flex-col justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 overflow-hidden pr-3 pl-1 space-y-1.5">
              <button
                onClick={() => {
                  const nextRole = state.role === 'admin' ? 'viewer' : 'admin';
@@ -942,28 +1192,42 @@ const AppShell = () => {
          </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative overflow-hidden h-screen">
+      <main className="flex-1 flex flex-col relative overflow-hidden h-screen w-full">
         {/* Enterprise Top Bar */}
         <header className="h-14 border-b border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-between px-4 sm:px-6 bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-sm shrink-0 z-10">
           
-          <div className="hidden md:flex flex-1" /> 
+          <div className="flex items-center md:flex-1">
+            <button 
+              className="md:hidden mr-3 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1 -ml-1 rounded-md active:bg-zinc-100 dark:active:bg-zinc-800" 
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="hidden md:block text-[13px] font-medium text-zinc-500">Wealth Operations</span>
+          </div> 
 
-          <div className="flex-1 flex justify-center w-full max-w-xl mx-2 sm:mx-4">
-             <button onClick={() => dispatch({ type: 'TOGGLE_CMD' })} className="flex items-center justify-center text-[12px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors bg-zinc-50 dark:bg-zinc-800/40 px-3 py-1.5 rounded-[4px] w-full border border-zinc-200/50 dark:border-zinc-800">
+          <div className="flex-1 flex justify-end md:justify-center w-full max-w-xl mx-2 sm:mx-4">
+             {/* Desktop Search */}
+             <button onClick={() => dispatch({ type: 'TOGGLE_CMD' })} className="hidden md:flex items-center justify-center text-[12px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors bg-zinc-50 dark:bg-zinc-800/40 px-3 py-1.5 rounded-[4px] w-full border border-zinc-200/50 dark:border-zinc-800">
                 <Search className="w-3.5 h-3.5 mr-2.5" />
                 <span>Search commands...</span>
              </button>
           </div>
 
-          <div className="flex-1 flex items-center justify-end space-x-5">
-            <button onClick={() => dispatch({ type: 'TOGGLE_DARK' })} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+          <div className="flex items-center justify-end space-x-3 sm:space-x-5 md:flex-1">
+            {/* Mobile Search Icon */}
+            <button onClick={() => dispatch({ type: 'TOGGLE_CMD' })} className="md:hidden text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1.5">
+              <Search className="w-4 h-4" />
+            </button>
+
+            <button onClick={() => dispatch({ type: 'TOGGLE_DARK' })} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1.5">
               {state.darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto w-full">
-           <div className="w-full px-6 sm:px-10 lg:px-16 py-8 sm:py-10 h-full">
+           <div className="w-full px-4 sm:px-10 lg:px-16 py-6 sm:py-10 h-full max-w-7xl mx-auto">
              {pages[state.activePage]}
            </div>
         </div>
@@ -987,11 +1251,11 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-10 font-sans text-zinc-100">
-          <div className="bg-[#111] border border-red-900/50 p-8 rounded-[8px] max-w-2xl w-full shadow-2xl">
-            <h2 className="text-red-500 text-xl font-bold mb-4 flex items-center"><X className="w-5 h-5 mr-2"/> React Runtime Error</h2>
-            <p className="text-zinc-400 mb-6 text-sm">The application crashed during rendering. Below is the technical stack trace to help fix it:</p>
-            <pre className="bg-black/50 p-4 rounded text-xs text-red-400 overflow-x-auto font-mono leading-relaxed border border-red-900/30">
+        <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 sm:p-10 font-sans text-zinc-100">
+          <div className="bg-[#111] border border-red-900/50 p-6 sm:p-8 rounded-[8px] max-w-2xl w-full shadow-2xl">
+            <h2 className="text-red-500 text-lg sm:text-xl font-bold mb-4 flex items-center"><X className="w-5 h-5 mr-2"/> React Runtime Error</h2>
+            <p className="text-zinc-400 mb-6 text-xs sm:text-sm">The application crashed during rendering. Below is the technical stack trace to help fix it:</p>
+            <pre className="bg-black/50 p-4 rounded text-[10px] sm:text-xs text-red-400 overflow-x-auto font-mono leading-relaxed border border-red-900/30">
               {this.state.error?.toString()}
               {'\n\n'}
               {this.state.error?.stack}
